@@ -86,6 +86,19 @@ func serve(args []string) error {
 		return err
 	}
 
+	//peerEndpoint就是pb.PeerEndpoint--->/core/protos/fabric.pb.go
+	//type PeerEndpoint struct {
+	//  ID      *PeerID           `protobuf:"bytes,1,opt,name=ID,json=iD" json:"ID,omitempty"`
+	//  Address string            `protobuf:"bytes,2,opt,name=address" json:"address,omitempty"`
+	//  Type    PeerEndpoint_Type `protobuf:"varint,3,opt,name=type,enum=protos.PeerEndpoint_Type" json:"type,omitempty"`
+	//  PkiID   []byte            `protobuf:"bytes,4,opt,name=pkiID,proto3" json:"pkiID,omitempty"`
+	//}
+	//
+	//func (m *PeerEndpoint) Reset()                    { *m = PeerEndpoint{} }
+	//func (m *PeerEndpoint) String() string            { return proto.CompactTextString(m) }
+	//func (*PeerEndpoint) ProtoMessage()               {}
+	//func (*PeerEndpoint) Descriptor() ([]byte, []int) { return fileDescriptor5, []int{8} }
+
 	peerEndpoint, err := peer.GetPeerEndpoint()
 	if err != nil {
 		err = fmt.Errorf("Failed to get Peer Endpoint: %s", err)
@@ -103,7 +116,7 @@ func serve(args []string) error {
 	if err != nil {
 		grpclog.Fatalf("Failed to listen: %v", err)
 	}
-
+	//ehubLis默认为0.0.0.0:7053;若为验证节点，则把TLS证书读入ehubGrpcServer。TLS(Transport Layer Security Protocol)：安全传输层协议
 	ehubLis, ehubGrpcServer, err := createEventHubServer()
 	if err != nil {
 		grpclog.Fatalf("Failed to create ehub server: %v", err)
@@ -275,6 +288,7 @@ func createEventHubServer() (net.Listener, *grpc.Server, error) {
 	var grpcServer *grpc.Server
 	var err error
 	if peer.ValidatorEnabled() {
+		//默认0.0.0.0:7053
 		lis, err = net.Listen("tcp", viper.GetString("peer.validator.events.address"))
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to listen: %v", err)
@@ -300,6 +314,7 @@ func createEventHubServer() (net.Listener, *grpc.Server, error) {
 
 		pb.RegisterEventsServer(grpcServer, ehServer)
 	}
+	//如果是验证节点，则读取证书，并生成新的grpcServer
 	return lis, grpcServer, err
 }
 
